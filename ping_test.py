@@ -6,6 +6,8 @@ from pathlib import Path
 import re
 from tqdm import tqdm
 import time
+from tabulate import tabulate
+from colorama import Fore, Style
 
 def setup_logger(log_dir="logs"):
     """Set up a logger that writes to a date-named file."""
@@ -100,9 +102,20 @@ if __name__ == "__main__":
         for line in file:
             websites += [line.strip()]
 
-    for website in tqdm(websites):
+    cache = []
+    for idx, website in enumerate(tqdm(websites)):
         total += 1
         result, response_time = is_allowed(website)
+        if idx % 5 == 0:
+            print(tabulate(cache))
+            cache = []
+        else:
+            result_text = ''
+            if result:
+                result_text = Fore.GREEN + 'ACCESSIBLE' + Style.RESET_ALL
+            else:
+                result_text = Fore.RED + 'UNREACHABLE' + Style.RESET_ALL
+            cache.append([website, result_text, response_time])
         if result is None:
             unreachable += 1
         else:
