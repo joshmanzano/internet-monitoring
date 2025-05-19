@@ -8,6 +8,7 @@ from tqdm import tqdm
 import time
 from tabulate import tabulate
 from colorama import Fore, Style
+import random
 
 def setup_logger(log_dir="logs"):
     """Set up a logger that writes to a date-named file."""
@@ -107,8 +108,8 @@ if __name__ == "__main__":
         total += 1
         result, response_time = is_allowed(website)
         if idx % 5 == 0:
-            print(tabulate(cache))
-            cache = []
+            if len(cache) >= 5:
+                print(tabulate(cache[-5:]))
         else:
             result_text = ''
             if result:
@@ -126,5 +127,15 @@ if __name__ == "__main__":
         if response_time:
             response_times += [response_time]
 
+    random.shuffle(cache)
+    print(tabulate(cache))
+
     avg_response_time = sum(response_times) / len(response_times)
     log_ping_data(logger, total, allowed, blocked, unreachable, avg_response_time)
+
+    status = Fore.RED  + 'UNAVAILABLE' + Style.RESET_ALL
+    if total == allowed:
+        status = Fore.GREEN + 'HEALTHY' + Style.RESET_ALL
+    elif unreachable > 0 and unreachable != total:
+        status = Fore.YELLOW + 'WARNING' + Style.RESET_ALL
+    print(status, f'{(allowed/total)*100:.2f}%')
