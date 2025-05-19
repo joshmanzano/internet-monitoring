@@ -81,8 +81,6 @@ def ping_host(hostname, count=3):
                                 check=False)
         
         # Return the output
-        print(hostname, result.stdout, result.returncode, get_response_time(result.stdout))
-        breakpoint()
         return result.stdout, result.returncode, get_response_time(result.stdout)
     except Exception as e:
         return None, None, None
@@ -96,8 +94,6 @@ def is_allowed(website):
         else:
             return True, response_time
     # Not accessible by ping
-    print(ping_result, response_time)
-    breakpoint()
     return None, response_time
 
 if __name__ == "__main__":
@@ -120,8 +116,6 @@ if __name__ == "__main__":
         total += 1
         website, expected_result = website_data[0], website_data[1]
         result, response_time = is_allowed(website)
-        print(result, response_time)
-        breakpoint()
         if idx % 5 == 0:
             if len(cache) >= 5:
                 print(tabulate(cache[-5:]))
@@ -138,9 +132,9 @@ if __name__ == "__main__":
             else:
                 result_text = Fore.YELLOW + result_text + Style.RESET_ALL
             if response_time < 100:
-                response_time_text = Fore.GREEN + f'{response_time:.2f}' + Style.RESET_ALL
+                response_time_text = Fore.GREEN + f'{response_time:.2f} ms' + Style.RESET_ALL
             elif response_time > 300:
-                response_time_text = Fore.YELLOW + f'{response_time:.2f}' + Style.RESET_ALL
+                response_time_text = Fore.YELLOW + f'{response_time:.2f} ms' + Style.RESET_ALL
             else:
                 response_time_text = f'{response_time:.2f}'
             cache.append([website, result_text, response_time_text])
@@ -162,7 +156,7 @@ if __name__ == "__main__":
     with open(csv_path, 'a', newline='') as csvfile:
         csvwriter = csv.writer(csvfile, delimiter=' ',
                                 quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        csvwriter.writerow([total, allowed, blocked, unreachable, avg_response_time])
+        csvwriter.writerow([total, allowed, blocked, unreachable, f'{avg_response_time:.2f}', f'{((allowed+blocked)/total)*100:.2f}'])
 
     status = Fore.RED  + 'UNAVAILABLE' + Style.RESET_ALL
     if total == allowed + blocked:
