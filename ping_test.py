@@ -9,6 +9,7 @@ import time
 from tabulate import tabulate
 from colorama import Fore, Style
 import random
+import csv
 
 def setup_logger(log_dir="logs"):
     """Set up a logger that writes to a date-named file."""
@@ -18,6 +19,7 @@ def setup_logger(log_dir="logs"):
     # Generate filename based on current date
     today = datetime.datetime.now().strftime("%Y-%m-%d")
     log_file = os.path.join(log_dir, f"ping_stats_{today}.log")
+    csv_file = os.path.join(log_dir, f"ping_stats_{today}.csv")
     
     # Configure logger
     logger = logging.getLogger("ping_statistics")
@@ -39,7 +41,7 @@ def setup_logger(log_dir="logs"):
     logger.addHandler(file_handler)
     logger.addHandler(console_handler)
     
-    return logger
+    return logger, csv_file
 
 # log_ping_data(logger, total, allowed, blocked, unreachable, avg_response_time)
 def log_ping_data(logger, total, allowed, blocked, unreachable, avg_response_time):
@@ -79,6 +81,8 @@ def ping_host(hostname, count=3):
                                 check=False)
         
         # Return the output
+        print(hostname, result.stdout, result.returncode, get_response_time(result.stdout))
+        breakpoint()
         return result.stdout, result.returncode, get_response_time(result.stdout)
     except Exception as e:
         return None, None, None
@@ -92,31 +96,54 @@ def is_allowed(website):
         else:
             return True, response_time
     # Not accessible by ping
+    print(ping_result, response_time)
+    breakpoint()
     return None, response_time
 
 if __name__ == "__main__":
-    logger = setup_logger()
+    logger, csv_path = setup_logger()
     allowed, blocked, total, unreachable = 0, 0, 0, 0
     response_times, websites = [], []
 
     with open('allowed_websites.txt', 'r') as file:
         for line in file:
-            websites += [line.strip()]
+            websites += [[line.strip(), True]]
+            
+    # with open('blocked_websites.txt', 'r') as file:
+    #     for line in file:
+    #         websites += [[line.strip(), False]]
+    
+    random.shuffle(websites)
 
     cache = []
-    for idx, website in enumerate(tqdm(websites)):
+    for idx, website_data in enumerate(tqdm(websites)):
         total += 1
+        website, expected_result = website_data[0], website_data[1]
         result, response_time = is_allowed(website)
+        print(result, response_time)
+        breakpoint()
         if idx % 5 == 0:
             if len(cache) >= 5:
                 print(tabulate(cache[-5:]))
         else:
             result_text = ''
-            if result:
-                result_text = Fore.GREEN + 'ACCESSIBLE' + Style.RESET_ALL
-            else:
+            if result is None:
                 result_text = Fore.RED + 'UNREACHABLE' + Style.RESET_ALL
-            cache.append([website, result_text, response_time])
+            elif result:
+                result_text = 'ACCESSIBLE'
+            elif not result:
+                result_text = 'BLOCKED'
+            if result == expected_result:
+                result_text = Fore.GREEN + result_text + Style.RESET_ALL
+            else:
+                result_text = Fore.YELLOW + result_text + Style.RESET_ALL
+            if response_time < 100:
+                response_time_text = Fore.GREEN + f'{response_time:.2f}' + Style.RESET_ALL
+            elif response_time > 300:
+                response_time_text = Fore.YELLOW + f'{response_time:.2f}' + Style.RESET_ALL
+            else:
+                response_time_text = f'{response_time:.2f}'
+            cache.append([website, result_text, response_time_text])
         if result is None:
             unreachable += 1
         else:
@@ -132,10 +159,14 @@ if __name__ == "__main__":
 
     avg_response_time = sum(response_times) / len(response_times)
     log_ping_data(logger, total, allowed, blocked, unreachable, avg_response_time)
+    with open(csv_path, 'a', newline='') as csvfile:
+        csvwriter = csv.writer(csvfile, delimiter=' ',
+                                quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        csvwriter.writerow([total, allowed, blocked, unreachable, avg_response_time])
 
     status = Fore.RED  + 'UNAVAILABLE' + Style.RESET_ALL
-    if total == allowed:
+    if total == allowed + blocked:
         status = Fore.GREEN + 'HEALTHY' + Style.RESET_ALL
     elif unreachable > 0 and unreachable != total:
         status = Fore.YELLOW + 'WARNING' + Style.RESET_ALL
-    print(status, f'{(allowed/total)*100:.2f}%')
+    print(status, f'{((allowed+blocked)/total)*100:.2f}%')
