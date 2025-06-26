@@ -1,0 +1,42 @@
+*** Targets ***
+probe = FPing
+menu = Top
+title = Network Latency Grapher
+remark = Welcome to SmokePing.
++ Local
+menu = Local
+title = Local Network (ICMP)
+++ LocalMachine
+menu = Local Machine
+title = This host
+host = localhost
++ DNS
+menu = DNS latency
+title = DNS latency (ICMP)
+++ Google
+title = Google
+host = 8.8.8.8
+++ Cloudflare
+title = Cloudflare
+host = 1.1.1.1
+++ Quad9
+title = Quad9
+host = 9.9.9.9
+++ OpenDNS
+title = OpenDNS
+host = 208.67.222.222
++ HTTP
+menu = HTTP latency
+title = HTTP latency (ICMP)
+++ TYAS
+host = tyas.tyc.edu.tw
+++ Gradelink
+host = gradelink.com
+++ Classdojo
+host = classdojo.com
+++ Google
+host = google.com
+++ Github
+host = github.com
+++ Cloudflare
+host = cloudflare.com
